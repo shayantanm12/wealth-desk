@@ -102,11 +102,11 @@ details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14p
     <table class="small" style="margin-top:6px"><tr><td>Morning dashboard</td><td class="r">Daily, 7:45 AM</td></tr><tr><td>Afternoon review</td><td class="r">Mon–Fri, 1:45 PM</td></tr><tr><td>Weekly school + ledger sync</td><td class="r">Sun, 9:45 AM</td></tr></table>
     <p class="muted small" style="margin:8px 0 0">View-only copy, refreshed after each report. To log a trade or ask a question, use the Claude version of this board. Research support, not SEBI-registered advice.</p></div>
 </section>
-<section id="v-portfolio"><div class="card"><div class="card-h"><h2>Holdings</h2><span class="muted small" id="pAsOf"></span></div><div id="holdings"></div></div><div class="card" id="concCard"></div></section>
+<section id="v-portfolio"><div class="card"><div class="card-h"><h2>Holdings</h2><span class="muted small" id="pAsOf"></span></div><div id="holdings"></div></div><div class="card" id="sipCard"></div><div class="card" id="concCard"></div></section>
 </div>
 <script>
 const DATA=/*__DATA__*/{};
-const S={holdings:DATA.holdings||[],reports:DATA.reports||{},profile:Object.assign({target:1000000},DATA.profile||{})};
+const S={sips:DATA.sips||[],holdings:DATA.holdings||[],reports:DATA.reports||{},profile:Object.assign({target:1000000},DATA.profile||{})};
 const inr=(n,d=0)=>(n==null||isNaN(n))?"—":"₹"+Number(n).toLocaleString("en-IN",{maximumFractionDigits:d,minimumFractionDigits:d});
 const pct=n=>(n==null||isNaN(n))?"—":(n>=0?"+":"")+n.toFixed(1)+"%";
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -123,7 +123,10 @@ $("status").textContent=DATA.updatedAt?("Updated "+DATA.updatedAt):"";
 const rows=S.holdings.map(h=>({...h,val:h.qty*(h.ltp??h.avg)})).sort((a,b)=>b.val-a.val);
 $("holdings").innerHTML=rows.length?rows.map(h=>{const w=val?h.val/val*100:0,r=h.avg?((h.ltp??h.avg)/h.avg-1)*100:null;return `<div class="hold"><div><span class="sym">${esc(h.sym)}</span> ${pill(h.label)}<div class="small muted num">${h.qty} @ ${inr(h.avg,2)} · LTP ${inr(h.ltp,2)}</div></div><div style="text-align:right"><div class="num">${inr(h.val)}</div><div class="small num ${r>=0?"up":"dn"}">${pct(r)} · ${w.toFixed(1)}%</div></div><div class="w"><i style="width:${w.toFixed(1)}%"></i></div></div>`;}).join(""):'<p class="empty">No holdings saved yet.</p>';
 const asOf=rows.map(h=>h.ltpAt).filter(Boolean).pop();$("pAsOf").textContent=asOf?("Prices as of "+asOf):"";
-if(rows.length){const top3=rows.slice(0,3).reduce((s,h)=>s+h.val,0)/(val||1)*100;$("concCard").innerHTML=`<h3>Concentration check</h3><p class="small" style="margin:6px 0 0">Top 3 holdings are <b class="num">${top3.toFixed(0)}%</b> of the portfolio. Direct stocks are 100% of invested money, against your own 20% ceiling.</p>`;}else $("concCard").remove();
+
+{const sp=S.sips;if(sp.length){const act=sp.filter(x=>x.status==="Active"),mo=act.reduce((a,x)=>a+x.amt,0),inv=sp.reduce((a,x)=>a+(x.invested||0),0);
+$("sipCard").innerHTML=`<div class="card-h"><h2>Mutual fund SIPs</h2><span class="muted small num">${inr(mo)}/month · ${inr(inv)} invested</span></div>`+sp.map(x=>`<div class="hold"><div><span class="sym">${esc(x.fund)}</span><div class="small muted">${esc(x.type)} · ${esc(x.sipType)} · ${x.day}th ${x.status==="Active"?" · next "+esc(x.next):""}${x.stepUp?" · step-up "+esc(x.stepUp):""}</div>${x.note?`<div class="small muted">${esc(x.note)}</div>`:""}</div><div style="text-align:right"><div class="num">${inr(x.amt)}</div><div class="small muted">${esc(x.status)}</div></div></div>`).join("");}else $("sipCard").remove();}
+if(rows.length){const top3=rows.slice(0,3).reduce((s,h)=>s+h.val,0)/(val||1)*100;$("concCard").innerHTML=`<h3>Concentration check</h3><p class="small" style="margin:6px 0 0">Top 3 holdings are <b class="num">${top3.toFixed(0)}%</b> of the portfolio. ${S.sips.some(x=>x.invested)?"":"Direct stocks are still 100% of invested money until the first SIP instalments go through."}</p>`;}else $("concCard").remove();
 function rep(kind,title){const r=S.reports[kind];if(!r)return `<div class="card"><div class="card-h"><h2>${title}</h2><span class="pill p-neu">Waiting</span></div><p class="empty">No report yet.</p></div>`;
  const dec=(r.decisions||[]).length?`<table style="margin-top:6px"><tr><th>Asset</th><th>Call</th></tr>${r.decisions.map(d=>`<tr><td>${esc(d.asset)}${d.note?`<div class="small muted">${esc(d.note)}</div>`:""}</td><td>${pill(d.action)}</td></tr>`).join("")}</table>`:"";
  const list=(h,a)=>a&&a.length?`<h3 style="margin-top:10px">${h}</h3><ul class="clean small">${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
