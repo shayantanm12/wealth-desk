@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wealth Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a pocket trading-desk — summary strip on top, four thumb-reachable tabs, cards stacked one column on phone */
+:root{
+  --bg:#f3f4ef; --surface:#ffffff; --ink:#16201d; --muted:#5d6a65; --line:#dde2dc;
+  --accent:#0d5c52; --accent-soft:#e1efeb;
+  --good:#1f7a3f; --good-soft:#e4f3e8; --warn:#9a6200; --warn-soft:#fbf0d9; --bad:#b3261e; --bad-soft:#fbe5e3;
+  --display:"Archivo",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1513; --surface:#18211e; --ink:#e7ece9; --muted:#9aa8a2; --line:#2a3531;
+  --accent:#5cc2b2; --accent-soft:#1c3330; --good:#6fcf8f; --good-soft:#18301f; --warn:#e8b45a; --warn-soft:#342812; --bad:#f08a82; --bad-soft:#3a1c1a; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f1513; --surface:#18211e; --ink:#e7ece9; --muted:#9aa8a2; --line:#2a3531;
+  --accent:#5cc2b2; --accent-soft:#1c3330; --good:#6fcf8f; --good-soft:#18301f; --warn:#e8b45a; --warn-soft:#342812; --bad:#f08a82; --bad-soft:#3a1c1a; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding:0 16px 48px}
+.wrap{max-width:760px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:22px;font-weight:800;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:700}
+h3{font-size:15px;font-weight:700}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+header{padding:18px 0 12px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.status{font-size:12px;color:var(--muted)}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.tile .k{font-size:12px;color:var(--muted)}
+.tile .v{font-size:18px;font-weight:500;margin-top:2px}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent)}
+nav{position:sticky;top:0;z-index:2;background:var(--bg);display:flex;gap:6px;padding:8px 0;border-bottom:1px solid var(--line);margin-bottom:14px}
+nav a{flex:1;text-align:center;padding:9px 6px;border-radius:8px;text-decoration:none;color:var(--muted);font-weight:600;font-size:14px}
+nav a[aria-current="page"]{background:var(--accent);color:#fff}
+:root[data-theme="dark"] nav a[aria-current="page"]{color:#0f1513}
+nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section{display:none;flex-direction:column;gap:12px}
+section.on{display:flex}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.pill{display:inline-block;font:600 11px/1 var(--body);letter-spacing:.04em;padding:5px 8px;border-radius:999px;text-transform:uppercase;white-space:nowrap}
+.p-good{background:var(--good-soft);color:var(--good)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}
+.p-neu{background:var(--accent-soft);color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:500}
+td.r,th.r{text-align:right}
+.hold{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.hold:last-child{border-bottom:0}
+.hold .sym{font-weight:600}
+.hold .w{grid-column:1/-1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.hold .w>i{display:block;height:100%;background:var(--accent)}
+.up{color:var(--good)} .dn{color:var(--bad)}
+ul.clean{margin:0;padding-left:18px}
+ul.clean li{margin:3px 0}
+.note{border-left:3px solid var(--warn);padding:8px 10px;background:var(--warn-soft);border-radius:0 8px 8px 0;font-size:14px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+form .full{grid-column:1/-1}
+label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input,select,textarea{font:15px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+textarea{min-height:84px;resize:vertical}
+button{font:600 14px var(--body);border:0;border-radius:8px;padding:10px 14px;background:var(--accent);color:#fff;cursor:pointer}
+:root[data-theme="dark"] button{color:#0f1513}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.answer{white-space:pre-wrap;font-size:14px;background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--line)}
+details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px}
+.empty{color:var(--muted);font-size:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{background:var(--accent-soft);color:var(--accent);font-weight:500;padding:7px 10px}
+@media (max-width:520px){.strip{grid-template-columns:1fr 1fr}form{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Wealth Desk</h1><span class="status" id="status"></span></header>
+<div class="strip">
+  <div class="tile"><div class="k">Current value</div><div class="v num" id="tValue">—</div></div>
+  <div class="tile"><div class="k">Invested</div><div class="v num" id="tInv">—</div></div>
+  <div class="tile"><div class="k">Gain</div><div class="v num" id="tGain">—</div></div>
+  <div class="tile"><div class="k">₹10 lakh goal</div><div class="v num" id="tGoal">—</div><div class="bar"><i id="tGoalBar" style="width:0"></i></div></div>
+</div>
+<nav aria-label="Sections"><a href="#today" data-v="today">Today</a><a href="#portfolio" data-v="portfolio">Portfolio</a></nav>
+<section id="v-today"><div id="reports"></div>
+  <div class="card"><h3>Report schedule (IST)</h3>
+    <table class="small" style="margin-top:6px"><tr><td>Morning dashboard</td><td class="r">Daily, 7:45 AM</td></tr><tr><td>Afternoon review</td><td class="r">Mon–Fri, 1:45 PM</td></tr><tr><td>Weekly school + ledger sync</td><td class="r">Sun, 9:45 AM</td></tr></table>
+    <p class="muted small" style="margin:8px 0 0">View-only copy, refreshed after each report. To log a trade or ask a question, use the Claude version of this board. Research support, not SEBI-registered advice.</p></div>
+</section>
+<section id="v-portfolio"><div class="card"><div class="card-h"><h2>Holdings</h2><span class="muted small" id="pAsOf"></span></div><div id="holdings"></div></div><div class="card" id="concCard"></div></section>
+</div>
+<script>
+const DATA=/*__DATA__*/{};
+const S={holdings:DATA.holdings||[],reports:DATA.reports||{},profile:Object.assign({target:1000000},DATA.profile||{})};
+const inr=(n,d=0)=>(n==null||isNaN(n))?"—":"₹"+Number(n).toLocaleString("en-IN",{maximumFractionDigits:d,minimumFractionDigits:d});
+const pct=n=>(n==null||isNaN(n))?"—":(n>=0?"+":"")+n.toFixed(1)+"%";
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LABELS={BUY:"p-good",ACCUMULATE:"p-good",HOLD:"p-neu",WAIT:"p-warn",WATCH:"p-warn",REDUCE:"p-bad",AVOID:"p-bad"};
+const pill=l=>l?`<span class="pill ${LABELS[String(l).toUpperCase()]||"p-neu"}">${esc(l)}</span>`:"";
+const $=id=>document.getElementById(id);
+const VIEWS=["today","portfolio"];
+function route(){const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"today";VIEWS.forEach(x=>{$("v-"+x).classList.toggle("on",x===v);const a=document.querySelector(`nav a[data-v="${x}"]`);if(x===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});}
+addEventListener("hashchange",route);route();
+let inv=0,val=0;S.holdings.forEach(h=>{inv+=h.qty*h.avg;val+=h.qty*(h.ltp??h.avg);});
+$("tValue").textContent=inr(val);$("tInv").textContent=inr(inv);$("tGain").innerHTML=`<span class="${val-inv>=0?"up":"dn"}">${inr(val-inv)}</span>`;
+const g=Math.min(100,val/S.profile.target*100);$("tGoal").textContent=g.toFixed(1)+"%";$("tGoalBar").style.width=g+"%";
+$("status").textContent=DATA.updatedAt?("Updated "+DATA.updatedAt):"";
+const rows=S.holdings.map(h=>({...h,val:h.qty*(h.ltp??h.avg)})).sort((a,b)=>b.val-a.val);
+$("holdings").innerHTML=rows.length?rows.map(h=>{const w=val?h.val/val*100:0,r=h.avg?((h.ltp??h.avg)/h.avg-1)*100:null;return `<div class="hold"><div><span class="sym">${esc(h.sym)}</span> ${pill(h.label)}<div class="small muted num">${h.qty} @ ${inr(h.avg,2)} · LTP ${inr(h.ltp,2)}</div></div><div style="text-align:right"><div class="num">${inr(h.val)}</div><div class="small num ${r>=0?"up":"dn"}">${pct(r)} · ${w.toFixed(1)}%</div></div><div class="w"><i style="width:${w.toFixed(1)}%"></i></div></div>`;}).join(""):'<p class="empty">No holdings saved yet.</p>';
+const asOf=rows.map(h=>h.ltpAt).filter(Boolean).pop();$("pAsOf").textContent=asOf?("Prices as of "+asOf):"";
+if(rows.length){const top3=rows.slice(0,3).reduce((s,h)=>s+h.val,0)/(val||1)*100;$("concCard").innerHTML=`<h3>Concentration check</h3><p class="small" style="margin:6px 0 0">Top 3 holdings are <b class="num">${top3.toFixed(0)}%</b> of the portfolio. Direct stocks are 100% of invested money, against your own 20% ceiling.</p>`;}else $("concCard").remove();
+function rep(kind,title){const r=S.reports[kind];if(!r)return `<div class="card"><div class="card-h"><h2>${title}</h2><span class="pill p-neu">Waiting</span></div><p class="empty">No report yet.</p></div>`;
+ const dec=(r.decisions||[]).length?`<table style="margin-top:6px"><tr><th>Asset</th><th>Call</th></tr>${r.decisions.map(d=>`<tr><td>${esc(d.asset)}${d.note?`<div class="small muted">${esc(d.note)}</div>`:""}</td><td>${pill(d.action)}</td></tr>`).join("")}</table>`:"";
+ const list=(h,a)=>a&&a.length?`<h3 style="margin-top:10px">${h}</h3><ul class="clean small">${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
+ return `<div class="card"><div class="card-h"><h2>${title}</h2>${pill(r.outlook)}</div><p class="small muted" style="margin:0 0 6px">${esc(r.date||"")}</p>${r.headline?`<p style="margin:0 0 6px">${esc(r.headline)}</p>`:""}${dec}${list("Risks",r.risks)}${list("Your actions",r.actions)}${r.learning?`<div class="note" style="margin-top:10px"><b>Learn:</b> ${esc(r.learning)}</div>`:""}${r.body?`<details style="margin-top:10px"><summary>Full report</summary><div class="answer" style="margin-top:8px">${esc(r.body)}</div></details>`:""}</div>`;}
+$("reports").innerHTML=rep("morning","Morning dashboard")+rep("afternoon","Afternoon review")+rep("weekly","Weekly school");
+</script>
+</body>
+</html>
