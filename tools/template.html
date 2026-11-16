@@ -78,6 +78,7 @@ button{font:600 14px var(--body);border:0;border-radius:8px;padding:10px 14px;ba
 button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
 button:disabled{opacity:.5;cursor:default}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rpt h4{margin:14px 0 4px;font-size:14px;color:var(--accent)}.rpt p{margin:2px 0;font-size:14px;line-height:1.5}.rpt .sub{color:var(--muted);font-size:13px}
 .answer{white-space:pre-wrap;font-size:14px;background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--line)}
 details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px}
 .empty{color:var(--muted);font-size:14px}
@@ -96,13 +97,14 @@ details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14p
   <div class="tile"><div class="k">Gain</div><div class="v num" id="tGain">—</div></div>
   <div class="tile"><div class="k">₹10 lakh goal</div><div class="v num" id="tGoal">—</div><div class="bar"><i id="tGoalBar" style="width:0"></i></div></div>
 </div>
-<nav aria-label="Sections"><a href="#today" data-v="today">Today</a><a href="#portfolio" data-v="portfolio">Portfolio</a></nav>
+<nav aria-label="Sections"><a href="#today" data-v="today">Today</a><a href="#portfolio" data-v="portfolio">Portfolio</a><a href="#analysis" data-v="analysis">Analysis</a></nav>
 <section id="v-today"><div id="reports"></div>
   <div class="card"><h3>Report schedule (IST)</h3>
     <table class="small" style="margin-top:6px"><tr><td>Morning dashboard</td><td class="r">Daily, 7:45 AM</td></tr><tr><td>Afternoon review</td><td class="r">Mon–Fri, 1:45 PM</td></tr><tr><td>Weekly school + ledger sync</td><td class="r">Sun, 9:45 AM</td></tr></table>
     <p class="muted small" style="margin:8px 0 0">View-only copy, refreshed after each report. To log a trade or ask a question, use the Claude version of this board. Research support, not SEBI-registered advice.</p></div>
 </section>
 <section id="v-portfolio"><div class="card"><div class="card-h"><h2>Holdings</h2><span class="muted small" id="pAsOf"></span></div><div id="holdings"></div></div><div class="card" id="sipCard"></div><div class="card" id="concCard"></div></section>
+<section id="v-analysis"><div id="analysis"></div></section>
 </div>
 <script>
 const DATA=/*__DATA__*/{};
@@ -113,7 +115,12 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const LABELS={BUY:"p-good",ACCUMULATE:"p-good",HOLD:"p-neu",WAIT:"p-warn",WATCH:"p-warn",REDUCE:"p-bad",AVOID:"p-bad"};
 const pill=l=>l?`<span class="pill ${LABELS[String(l).toUpperCase()]||"p-neu"}">${esc(l)}</span>`:"";
 const $=id=>document.getElementById(id);
-const VIEWS=["today","portfolio"];
+const VIEWS=["today","portfolio","analysis"];
+
+function fmtBody(t){return t.split("\n").map(l=>{const x=l.trim();if(!x)return "";if(/^([A-H]|[0-9]{1,2})\.\s+[A-Z][A-Z &\/,'-]{2,}/.test(x)||(x.length<45&&!/[a-z|]/.test(x)&&/[A-Z]{4}/.test(x))){const i=x.indexOf(":");return i>0&&i<45?`<h4>${esc(x.slice(0,i))}</h4>${x.slice(i+1).trim()?`<p>${esc(x.slice(i+1).trim())}</p>`:""}`:`<h4>${esc(x)}</h4>`;}if(/^(MORNING|AFTERNOON|WEEKLY)/.test(x))return `<p class="sub"><b>${esc(x)}</b></p>`;return `<p>${esc(x)}</p>`;}).join("");}
+function renderAnalysis(){const order=[["afternoon","Afternoon review"],["morning","Morning dashboard"],["weekly","Weekly school"]];
+const html=order.map(([k,t])=>{const r=S.reports[k];if(!r||!r.body)return "";return `<div class="card rpt"><div class="card-h"><h2>${t}</h2>${pill(r.outlook)}</div><p class="sub">${esc(r.date||"")}</p>${fmtBody(r.body)}</div>`;}).join("");
+$("analysis").innerHTML=html||'<p class="empty">No detailed reports yet.</p>';}
 function route(){const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"today";VIEWS.forEach(x=>{$("v-"+x).classList.toggle("on",x===v);const a=document.querySelector(`nav a[data-v="${x}"]`);if(x===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});}
 addEventListener("hashchange",route);route();
 let inv=0,val=0;S.holdings.forEach(h=>{inv+=h.qty*h.avg;val+=h.qty*(h.ltp??h.avg);});
@@ -131,7 +138,7 @@ function rep(kind,title){const r=S.reports[kind];if(!r)return `<div class="card"
  const dec=(r.decisions||[]).length?`<table style="margin-top:6px"><tr><th>Asset</th><th>Call</th></tr>${r.decisions.map(d=>`<tr><td>${esc(d.asset)}${d.note?`<div class="small muted">${esc(d.note)}</div>`:""}</td><td>${pill(d.action)}</td></tr>`).join("")}</table>`:"";
  const list=(h,a)=>a&&a.length?`<h3 style="margin-top:10px">${h}</h3><ul class="clean small">${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
  return `<div class="card"><div class="card-h"><h2>${title}</h2>${pill(r.outlook)}</div><p class="small muted" style="margin:0 0 6px">${esc(r.date||"")}</p>${r.headline?`<p style="margin:0 0 6px">${esc(r.headline)}</p>`:""}${dec}${list("Risks",r.risks)}${list("Your actions",r.actions)}${r.learning?`<div class="note" style="margin-top:10px"><b>Learn:</b> ${esc(r.learning)}</div>`:""}${r.body?`<details style="margin-top:10px"><summary>Full report</summary><div class="answer" style="margin-top:8px">${esc(r.body)}</div></details>`:""}</div>`;}
-$("reports").innerHTML=rep("morning","Morning dashboard")+rep("afternoon","Afternoon review")+rep("weekly","Weekly school");
+$("reports").innerHTML=rep("morning","Morning dashboard")+rep("afternoon","Afternoon review")+rep("weekly","Weekly school");renderAnalysis();
 </script>
 </body>
 </html>
