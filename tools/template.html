@@ -117,7 +117,7 @@ const pill=l=>l?`<span class="pill ${LABELS[String(l).toUpperCase()]||"p-neu"}">
 const $=id=>document.getElementById(id);
 const VIEWS=["today","portfolio","analysis"];
 
-function fmtBody(t){return t.split("\n").map(l=>{const x=l.trim();if(!x)return "";if(/^([A-H]|[0-9]{1,2})\.\s+[A-Z][A-Z &\/,'-]{2,}/.test(x)||(x.length<45&&!/[a-z|]/.test(x)&&/[A-Z]{4}/.test(x))){const i=x.indexOf(":");return i>0&&i<45?`<h4>${esc(x.slice(0,i))}</h4>${x.slice(i+1).trim()?`<p>${esc(x.slice(i+1).trim())}</p>`:""}`:`<h4>${esc(x)}</h4>`;}if(/^(MORNING|AFTERNOON|WEEKLY)/.test(x))return `<p class="sub"><b>${esc(x)}</b></p>`;return `<p>${esc(x)}</p>`;}).join("");}
+function fmtBody(t){return t.split("\n").map(l=>{const x=l.trim();if(!x)return "";if(/^([A-Z]|[A-Z]-[0-9]|[0-9]{1,2})\.\s+[A-Z][A-Z &\/,'-]{2,}/.test(x)||(x.length<45&&!/[a-z|]/.test(x)&&/[A-Z]{4}/.test(x))){const i=x.indexOf(":");return i>0&&i<45?`<h4>${esc(x.slice(0,i))}</h4>${x.slice(i+1).trim()?`<p>${esc(x.slice(i+1).trim())}</p>`:""}`:`<h4>${esc(x)}</h4>`;}if(/^(MORNING|AFTERNOON|WEEKLY)/.test(x))return `<p class="sub"><b>${esc(x)}</b></p>`;return `<p>${esc(x)}</p>`;}).join("");}
 function renderAnalysis(){const order=[["afternoon","Afternoon review"],["morning","Morning dashboard"],["weekly","Weekly school"]];
 const html=order.map(([k,t])=>{const r=S.reports[k];if(!r||!r.body)return "";return `<div class="card rpt"><div class="card-h"><h2>${t}</h2>${pill(r.outlook)}</div><p class="sub">${esc(r.date||"")}</p>${fmtBody(r.body)}</div>`;}).join("");
 $("analysis").innerHTML=html||'<p class="empty">No detailed reports yet.</p>';}
