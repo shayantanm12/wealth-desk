@@ -49,6 +49,7 @@ nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visibl
 section{display:none;flex-direction:column;gap:12px}
 section.on{display:flex}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.cw{border-top:1px solid var(--line);padding:10px 0}.cw:first-of-type{border-top:0}.cw .small{margin-top:3px}
 .card-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
 .pill{display:inline-block;font:600 11px/1 var(--body);letter-spacing:.04em;padding:5px 8px;border-radius:999px;text-transform:uppercase;white-space:nowrap}
 .p-good{background:var(--good-soft);color:var(--good)}
@@ -97,27 +98,39 @@ details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14p
   <div class="tile"><div class="k">Gain</div><div class="v num" id="tGain">—</div></div>
   <div class="tile"><div class="k">₹10 lakh goal</div><div class="v num" id="tGoal">—</div><div class="bar"><i id="tGoalBar" style="width:0"></i></div></div>
 </div>
-<nav aria-label="Sections"><a href="#today" data-v="today">Today</a><a href="#portfolio" data-v="portfolio">Portfolio</a><a href="#analysis" data-v="analysis">Analysis</a></nav>
+<nav aria-label="Sections"><a href="#today" data-v="today">Today</a><a href="#portfolio" data-v="portfolio">Portfolio</a><a href="#crash" data-v="crash">Crash watch</a><a href="#analysis" data-v="analysis">Analysis</a></nav>
 <section id="v-today"><div id="reports"></div>
   <div class="card"><h3>Report schedule (IST)</h3>
     <table class="small" style="margin-top:6px"><tr><td>Morning dashboard</td><td class="r">Daily, 7:45 AM</td></tr><tr><td>Afternoon review</td><td class="r">Mon–Fri, 1:45 PM</td></tr><tr><td>Weekly school + ledger sync</td><td class="r">Sun, 9:45 AM</td></tr></table>
     <p class="muted small" style="margin:8px 0 0">View-only copy, refreshed after each report. To log a trade or ask a question, use the Claude version of this board. Research support, not SEBI-registered advice.</p></div>
 </section>
 <section id="v-portfolio"><div class="card"><div class="card-h"><h2>Holdings</h2><span class="muted small" id="pAsOf"></span></div><div id="holdings"></div></div><div class="card" id="sipCard"></div><div class="card" id="concCard"></div></section>
+<section id="v-crash"><div id="crash"></div></section>
 <section id="v-analysis"><div id="analysis"></div></section>
 </div>
 <script>
 const DATA=/*__DATA__*/{};
-const S={sips:DATA.sips||[],holdings:DATA.holdings||[],reports:DATA.reports||{},profile:Object.assign({target:1000000},DATA.profile||{})};
+const S={crash:DATA.crashwatch||null,sips:DATA.sips||[],holdings:DATA.holdings||[],reports:DATA.reports||{},profile:Object.assign({target:1000000},DATA.profile||{})};
 const inr=(n,d=0)=>(n==null||isNaN(n))?"—":"₹"+Number(n).toLocaleString("en-IN",{maximumFractionDigits:d,minimumFractionDigits:d});
 const pct=n=>(n==null||isNaN(n))?"—":(n>=0?"+":"")+n.toFixed(1)+"%";
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const LABELS={BUY:"p-good",ACCUMULATE:"p-good",HOLD:"p-neu",WAIT:"p-warn",WATCH:"p-warn",REDUCE:"p-bad",AVOID:"p-bad"};
 const pill=l=>l?`<span class="pill ${LABELS[String(l).toUpperCase()]||"p-neu"}">${esc(l)}</span>`:"";
 const $=id=>document.getElementById(id);
-const VIEWS=["today","portfolio","analysis"];
+const VIEWS=["today","portfolio","crash","analysis"];
 
 function fmtBody(t){return t.split("\n").map(l=>{const x=l.trim();if(!x)return "";if(/^([A-Z]|[A-Z]-[0-9]|[0-9]{1,2})\.\s+[A-Z][A-Z &\/,'-]{2,}/.test(x)||(x.length<45&&!/[a-z|]/.test(x)&&/[A-Z]{4}/.test(x))){const i=x.indexOf(":");return i>0&&i<45?`<h4>${esc(x.slice(0,i))}</h4>${x.slice(i+1).trim()?`<p>${esc(x.slice(i+1).trim())}</p>`:""}`:`<h4>${esc(x)}</h4>`;}if(/^(MORNING|AFTERNOON|WEEKLY)/.test(x))return `<p class="sub"><b>${esc(x)}</b></p>`;return `<p>${esc(x)}</p>`;}).join("");}
+
+const pl=l=>{const w=String(l||"").toUpperCase().split(/[\s(]/)[0];return l?`<span class="pill ${LABELS[w]||"p-neu"}">${esc(l)}</span>`:"";};
+const kv=(k,v)=>v?`<div class="small"><span class="muted">${k}:</span> ${esc(v)}</div>`:"";
+function renderCrash(){const c=S.crash;if(!c){$("crash").innerHTML='<p class="empty">Crash watchlist not available yet.</p>';return;}
+let h=`<p class="sub muted small">Buy-quality-on-a-crash watchlist · updated ${esc(c.updated||"")} · research view, not advice</p>`;
+if((c.items||[]).length)h+=`<div class="card rpt"><div class="card-h"><h2>Quality leaders in a crash</h2></div>`+c.items.map(x=>`<div class="cw"><div class="card-h"><div><span class="sym">${esc(x.company)}</span>${x.youHold?' <span class="pill p-neu">You hold</span>':""}<div class="small muted">${esc(x.sector)} · ${esc(x.marketShare)}</div></div><div style="text-align:right"><div class="num">₹${esc(x.price)}</div><div class="small" style="color:var(--bad)">${esc(x.fallPct)}</div></div></div>${pl(x.label)} <span class="small muted">Recovery capability: <b>${esc(x.recovery)}</b></span>${kv("From peak",x.peak+(x.peakDate?" ("+x.peakDate+")":""))}${kv("Why it fell",x.cause)}${kv("Assets / balance sheet",x.balanceSheet)}${kv("Order book / pipeline",x.orderBook)}${kv("Recovery depends on",x.potential)}${kv("Latest news",x.latestNews)}${kv("Last deep-dive",x.lastDeepDive)}</div>`).join("")+`</div>`;
+if(c.deepDive)h+=`<div class="card rpt"><div class="card-h"><h2>Deep-dive: ${esc(c.deepDive.company)}</h2><span class="small muted">${esc(c.deepDive.date)}</span></div><p>${esc(c.deepDive.summary)}</p></div>`;
+if((c.growth||[]).length)h+=`<div class="card rpt"><div class="card-h"><h2>Growth leaders (order book + profit)</h2></div>`+c.growth.map(x=>`<div class="cw"><div class="card-h"><span class="sym">${esc(x.company)}</span>${pl(x.label)}</div><div class="small muted">${esc(x.sector)}</div>${kv("Order book",x.orderBook)}${kv("Order-book growth",x.orderBookGrowth)}${kv("Profit growth",x.profitGrowth)}${kv("Valuation",x.valuation)}</div>`).join("")+`</div>`;
+if((c.flows||[]).length)h+=`<div class="card rpt"><div class="card-h"><h2>Sector money flows</h2></div>`+c.flows.map(x=>`<div class="cw"><div class="card-h"><span class="sym">${esc(x.sector)}</span><span class="pill p-neu">${esc(x.stage)}</span></div>${kv("Level",x.level+" · "+x.change)}${kv("Flow",x.flow)}${kv("Your exposure",x.exposure)}${kv("How to act",x.action)}</div>`).join("")+`</div>`;
+if((c.tracker||[]).length)h+=`<div class="card rpt"><div class="card-h"><h2>Crash-fund tracker</h2></div>`+c.tracker.map(x=>`<div class="cw"><span class="sym">${esc(x.index)}</span>${kv("From peak",x.pctFromPeak)}${kv("Tranche",x.tranche)}</div>`).join("")+`</div>`;
+$("crash").innerHTML=h;}
 function renderAnalysis(){const order=[["afternoon","Afternoon review"],["morning","Morning dashboard"],["weekly","Weekly school"]];
 const html=order.map(([k,t])=>{const r=S.reports[k];if(!r||!r.body)return "";return `<div class="card rpt"><div class="card-h"><h2>${t}</h2>${pill(r.outlook)}</div><p class="sub">${esc(r.date||"")}</p>${fmtBody(r.body)}</div>`;}).join("");
 $("analysis").innerHTML=html||'<p class="empty">No detailed reports yet.</p>';}
@@ -138,7 +151,7 @@ function rep(kind,title){const r=S.reports[kind];if(!r)return `<div class="card"
  const dec=(r.decisions||[]).length?`<table style="margin-top:6px"><tr><th>Asset</th><th>Call</th></tr>${r.decisions.map(d=>`<tr><td>${esc(d.asset)}${d.note?`<div class="small muted">${esc(d.note)}</div>`:""}</td><td>${pill(d.action)}</td></tr>`).join("")}</table>`:"";
  const list=(h,a)=>a&&a.length?`<h3 style="margin-top:10px">${h}</h3><ul class="clean small">${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
  return `<div class="card"><div class="card-h"><h2>${title}</h2>${pill(r.outlook)}</div><p class="small muted" style="margin:0 0 6px">${esc(r.date||"")}</p>${r.headline?`<p style="margin:0 0 6px">${esc(r.headline)}</p>`:""}${dec}${list("Risks",r.risks)}${list("Your actions",r.actions)}${r.learning?`<div class="note" style="margin-top:10px"><b>Learn:</b> ${esc(r.learning)}</div>`:""}${r.body?`<details style="margin-top:10px"><summary>Full report</summary><div class="answer" style="margin-top:8px">${esc(r.body)}</div></details>`:""}</div>`;}
-$("reports").innerHTML=rep("morning","Morning dashboard")+rep("afternoon","Afternoon review")+rep("weekly","Weekly school");renderAnalysis();
+$("reports").innerHTML=rep("morning","Morning dashboard")+rep("afternoon","Afternoon review")+rep("weekly","Weekly school");renderAnalysis();renderCrash();
 </script>
 </body>
 </html>
